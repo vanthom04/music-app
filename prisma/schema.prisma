@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String      @id @default(uuid())
+  name             String
+  email            String      @unique
+  emailVerified    Boolean     @default(false)
+  image            String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @default(now()) @updatedAt
+  twoFactorEnabled Boolean?    @default(false)
+  sessions         Session[]
+  accounts         Account[]
+  passkeys         Passkey[]
+  twoFactors       TwoFactor[]
+  songs            Song[]
+  liked            LikedSong[]
+  playlists        Playlist[]
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                    String    @id @default(uuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
+
+model Verification {
+  id         String   @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+}
+
+model Passkey {
+  id           String   @id @default(uuid())
+  name         String?
+  publicKey    String
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentialID String
+  counter      Int
+  deviceType   String
+  backedUp     Boolean
+  transports   String?
+  aaguid       String?
+  createdAt    DateTime @default(now())
+}
+
+model TwoFactor {
+  id          String @id @default(uuid())
+  secret      String
+  backupCodes String
+  userId      String
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Song {
+  id       String  @id @default(uuid())
+  title    String
+  artist   String
+  album    String?
+  duration Float
+  image    String?
+  audio    String
+  lyrics   Lyrics?
+  userId   String
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  playlists PlaylistSong[]
+  liked     LikedSong[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Lyrics {
+  id        String   @id @default(uuid())
+  text      String  @db.Text
+  syncText  String?  @db.Text
+  songId    String   @unique
+  song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LikedSong {
+  id      String   @id @default(uuid())
+  userId  String
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  songId  String
+  song    Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  likedAt DateTime @default(now())
+
+  @@unique([userId, songId])
+  @@index([userId, songId])
+}
+
+model Playlist {
+  id           String   @id @default(uuid())
+  title        String
+  description  String?  @db.Text
+  thumbnailUrl String?
+  thumbVersion Int      @default(0)
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  songs PlaylistSong[]
+}
+
+model PlaylistSong {
+  id         String   @id @default(uuid())
+  playlistId String
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  songId     String
+  song       Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  addedAt    DateTime @default(now())
+
+  @@unique([playlistId, songId])
+  @@index([playlistId, songId])
+}
