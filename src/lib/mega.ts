@@ -12,7 +12,12 @@ export const getMegaStorage = async () => {
       throw new Error("MEGA_EMAIL and MEGA_PASSWORD must be set in environment variables")
     }
 
-    storagePromise = new Storage({ email, password }).ready
+    storagePromise = new Storage({
+      email,
+      password,
+      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+      keepalive: true
+    }).ready
   }
 
   return storagePromise
